@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Türkçe Realtime Sesli Bot</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <h1>Türkçe Realtime Sesli Bot</h1>
+
+  <label for="promptInput">Bağlam / Prompt:</label>
+  <textarea id="promptInput" rows="3" placeholder="Örn: Sen X firmasında çalışan bir chatbot'sun."></textarea>
+  <button id="savePromptBtn">Yönergeyi Kaydet</button>
+
+  <hr />
+
+  <button id="startBtn">Bağlan + Konuş</button>
+  <button id="stopBtn" disabled>Durdur</button>
+  <div id="logs"></div>
+
+  <script type="module" src="script.js"></script>
+</body>
+
+</html>
