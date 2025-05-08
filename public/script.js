@@ -227,6 +227,7 @@ function setupMicrophoneButton(){
 
     if(localTrack) {
 
+      sendPromptToSession();
       localTrack.enabled = true;
       micButton.classList.add('active');
       log("Mikrofon aktif");
@@ -312,7 +313,6 @@ function processPromptVariables(promptText){
 
   for (const variable of variables){
 
-    const placeholder = `\${${variable.name}}`;
     let value = variable.value;
 
 
