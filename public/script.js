@@ -326,8 +326,8 @@ function processPromptVariables(promptText){
 
       } catch (error) {
 
-        log(`❌ ${variable.name} için kod çalıştırma hatası: ${err.message}`);
-        value = `[${variable.name} hesaplanamadı: ${err.message}]`;
+        log(`❌ ${variable.name} için kod çalıştırma hatası: ${error.message}`);
+        value = `[${variable.name} hesaplanamadı: ${error.message}]`;
 
       }
 
