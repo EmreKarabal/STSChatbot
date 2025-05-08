@@ -17,6 +17,17 @@
     <textarea id="promptInput" rows="3" placeholder="Örn: Sen X firmasında çalışan bir chatbotsun"></textarea>
   </div>
 
+  <div class="variable-controls">
+    <button id="addVariableBtn" class="secondary-btn">
+      <i class="fas fa-plus-circle"></i>Değişken Ekle
+    </button>
+  </div>
+
+  <div id="variablesContainer" class="variable-container">
+
+  </div>
+
+
   <div class="form-group">
     <label for="voiceSelect">Bot Sesi:</label>
     <select id="voiceSelect">
@@ -47,6 +58,25 @@
   </div>
 
   <div id="logs"></div>
+
+
+  <template id="variableTemplate">
+    <div class="variable-item">
+      <div class="variable-header">
+        <div class="form-group variable-name-group">
+          <label>Değişken Adı:</label>
+          <input type="text" class="variable-name" placeholder="Değişken adını girin.">
+        </div>
+        <div class="form-group variable-value-group">
+          <label>Varsayılan Değer</label>
+          <input type="text" class="variable-value" placeholder="Değişken değerini atamak için gerekli kodu girin.">
+        </div>
+        <button class="delete-variable-btn">
+          <i class="fas fa-trash-alt"></i>
+        </button>
+      </div>
+    </div>
+  </template>
 
   <script type="module" src="script.js"></script>
 </body>

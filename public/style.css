@@ -12,6 +12,8 @@
   --gray: #6b7280;
   --gray-light: #e5e7eb;
   --card-bg: #ffffff;
+  --secondary: #6d28d9;
+  --secondary-light: rgba(109, 40, 217, 0.1);
   
   /* Advanced shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
@@ -92,21 +94,24 @@ label {
   color: var(--dark);
 }
 
-textarea {
+textarea, input[type="text"] {
   width: 100%;
   padding: var(--space-3) var(--space-4);
   border: 1px solid var(--gray-light);
   border-radius: var(--radius);
   font-family: inherit;
   font-size: 1rem;
-  resize: vertical;
   transition: all 0.2s ease;
   background-color: var(--card-bg);
   box-shadow: var(--shadow-sm);
+}
+
+textarea {
+  resize: vertical;
   min-height: 100px;
 }
 
-textarea:focus {
+textarea:focus, input[type="text"]:focus {
   border-color: var(--primary);
   outline: none;
   box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.2);
@@ -178,6 +183,23 @@ button:hover::before {
   background-color: black;
   transform: translateY(-1px);
   box-shadow: var(--shadow-lg);
+}
+
+/* Secondary button style */
+.secondary-btn {
+  background-color: var(--secondary);
+  color: white;
+  padding: var(--space-2) var(--space-4);
+  font-size: 0.9rem;
+}
+
+.secondary-btn:hover {
+  background-color: #5b21b6;
+  transform: translateY(-1px);
+}
+
+.secondary-btn i {
+  margin-right: var(--space-2);
 }
 
 /* Controls container */
@@ -305,6 +327,55 @@ button:disabled::before {
   scroll-behavior: smooth;
 }
 
+/* Variables Container */
+.variable-controls {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-4);
+}
+
+.variables-container {
+  margin-bottom: var(--space-5);
+}
+
+.variable-item {
+  background-color: var(--primary-light);
+  border-radius: var(--radius);
+  padding: var(--space-4);
+  margin-bottom: var(--space-3);
+  border-left: 4px solid var(--primary);
+  animation: fadeIn 0.3s ease;
+}
+
+.variable-header {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-3);
+}
+
+.variable-name-group {
+  flex: 1;
+}
+
+.variable-value-group {
+  flex: 2;
+}
+
+.delete-variable-btn {
+  background-color: var(--danger-light);
+  color: var(--danger);
+  padding: var(--space-2);
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius);
+  box-shadow: none;
+}
+
+.delete-variable-btn:hover {
+  background-color: var(--danger);
+  color: white;
+}
+
 /* Animations */
 @keyframes pulse {
   0% { transform: scale(1); opacity: 1; }
@@ -313,8 +384,8 @@ button:disabled::before {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .speaking {
@@ -405,6 +476,16 @@ button:disabled::before {
   #logs {
     height: 250px;
   }
+  
+  .variable-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .delete-variable-btn {
+    margin-top: var(--space-2);
+    width: 100%;
+  }
 }
 
 /* Dark mode support */
@@ -415,13 +496,16 @@ button:disabled::before {
     --card-bg: #1f2937;
     --gray-light: #374151;
     --gray: #9ca3af;
+    --primary-light: rgba(67, 97, 238, 0.2);
+    --secondary-light: rgba(109, 40, 217, 0.2);
+    --danger-light: rgba(239, 68, 68, 0.2);
   }
   
   body {
     background: linear-gradient(to bottom, var(--light), #0f172a);
   }
   
-  textarea, select {
+  textarea, select, input[type="text"] {
     background-color: #283548;
     color: var(--dark);
     border-color: #374151;
@@ -437,5 +521,9 @@ button:disabled::before {
   
   #savePromptBtn:hover {
     background-color: #6b7280;
+  }
+  
+  .variable-item {
+    background-color: rgba(67, 97, 238, 0.1);
   }
 }

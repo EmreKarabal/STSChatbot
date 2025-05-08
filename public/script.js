@@ -1,4 +1,4 @@
-/* ---------- DOM ---------- */
+
 const startBtn  = document.getElementById("startBtn");
 const stopBtn   = document.getElementById("stopBtn");
 const logsEl    = document.getElementById("logs");
@@ -6,33 +6,37 @@ const promptEl  = document.getElementById("promptInput");
 const voiceEl   = document.getElementById('voiceSelect');
 const saveBtn   = document.getElementById("savePromptBtn");
 const micButton = document.getElementById('micButton');
+const addVariableButton = document.getElementById('addVariableBtn');
+const variablesContainer = document.getElementById('variablesContainer');
+const variableTemplate = document.getElementById('variableTemplate');
 
-
-/* ---------- State ---------- */
 let pc, dc, localTrack, audioEl;
 let userPrompt = "";
 let userVoice = 'alloy';
 let isMicActive = false;
 let isMicMuted = true;
 let trackEnabled = false;
+let variables = [];
 
-/* ---------- Helpers ---------- */
+
 function log(...a){
   console.log(...a);
   logsEl.textContent += a.join(" ") + "\n";
   logsEl.scrollTop = logsEl.scrollHeight;
 }
 
-/* ---------- Prompt Kaydet ---------- */
+
+
 saveBtn.addEventListener("click", () => {
   userPrompt = promptEl.value.trim();
   userVoice = voiceEl.value;
   if (!userPrompt){ alert("Önce prompt girin."); return; }
   log(`💾  Prompt kaydedildi. Seçilen ses: ${userVoice}`);
-  if (dc && dc.readyState==="open") sendPromptToSession();
+  sendPromptToSession();
 });
 
-/* ---------- Bağlan ---------- */
+addVariableButton.addEventListener('click', addVariable);
+
 export async function connect(){
   if (!userPrompt){ alert("Önce prompt kaydedin."); return; }
   startBtn.disabled = true; 
@@ -92,12 +96,15 @@ export async function connect(){
   log("✅  Bağlantı kuruldu — Session:", sessionId, `---Ses: ${userVoice}`);
 }
 
-/* ---------- Session.update gönder ---------- */
+
 function sendPromptToSession(includeVad=false){
+
+  const processedPrompt = processPromptVariables(userPrompt);
+
   const payload = {
     type:"session.update",
     session:{
-      instructions:`Tüm yanıtlarını Türkçe ver. ${userPrompt}`,
+      instructions:`Tüm yanıtlarını Türkçe ver. ${processedPrompt}`,
       tools:[
         {
           type:"function",
@@ -157,7 +164,7 @@ function sendPromptToSession(includeVad=false){
   log("📜  Prompt + tools oturuma uygulandı.");
 }
 
-/* ---------- Function Call Handler ---------- */
+
 async function handleFunctionCall(call){
   const {name, arguments:argsJSON, call_id} = call;
   let output;
@@ -206,15 +213,13 @@ async function handleFunctionCall(call){
   }
 }
 
-/* ---------- Bağlantı kapat ---------- */
+
 export function disconnect(){
   stopBtn.disabled = true; startBtn.disabled = false;
   if (dc) dc.close(); if (pc) pc.close(); if (localTrack) localTrack.stop();
   pc = dc = localTrack = null;
   log("⛔ Bağlantı kapatıldı");
 }
-
-
 
 function setupMicrophoneButton(){
 
@@ -246,7 +251,95 @@ function setupMicrophoneButton(){
 
 }
 
+function addVariable(){
 
+  const clone = document.importNode(variableTemplate.content, true);
+  const variableItem = clone.querySelector('.variable-item');
+  const deleteButton = clone.querySelector('.delete-variable-btn');
+
+
+  deleteButton.addEventListener('click', () => {
+
+    variableItem.parentNode.removeChild(variableItem);
+    updateVariablesArray();
+
+  });
+
+  const nameInput = clone.querySelector('.variable-name');
+  const valueInput = clone.querySelector('.variable-value');
+
+  nameInput.addEventListener('input', updateVariablesArray);
+  valueInput.addEventListener('input', updateVariablesArray);
+
+  variablesContainer.appendChild(clone);
+  updateVariablesArray();
+
+}
+
+function updateVariablesArray() {
+
+  variables = [];
+  const items = variablesContainer.querySelectorAll('.variable-item');
+
+
+  items.forEach(item => {
+
+    const nameEl = item.querySelector('.variable-name');
+    const valueEl = item.querySelector('.variable-value');
+
+    if(nameEl.value.trim()){
+
+      variables.push({
+
+        name: nameEl.value.trim(),
+        value: valueEl.value.trim()
+
+      });
+
+    }
+
+  });
+
+  console.log('Güncel değişkenler: ', variables);
+
+}
+
+function processPromptVariables(promptText){
+
+  if(!variables.length) return promptText;
+
+  let processedPrompt = promptText;
+
+  for (const variable of variables){
+
+    const placeholder = `\${${variable.name}}`;
+    let value = variable.value;
+
+
+    if(value.startsWith('js:')) {
+
+      try {
+
+        const jsCode = value.substring(3);
+        value = Function(`"use strict"; return (${jsCode})`)();
+        log(`📊 Değişken ${variable.name} için kod çalıştırıldı: ${value}`);
+
+      } catch (error) {
+
+        log(`❌ ${variable.name} için kod çalıştırma hatası: ${err.message}`);
+        value = `[${variable.name} hesaplanamadı: ${err.message}]`;
+
+      }
+
+    }
+
+    processedPrompt = processedPrompt.replace(new RegExp(`\\$\\{${variable.name}}`, 'g'), value);
+
+  }
+
+  return processedPrompt;
+
+}
 
 
 setupMicrophoneButton();
