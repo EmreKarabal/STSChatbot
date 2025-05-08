@@ -1,6 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
-import { GenerateContentResponseHandler } from "@google-cloud/vertexai";
+
 
 dotenv.config();
 const { OPENAI_API_KEY, PORT = 3000 } = process.env;
@@ -14,8 +14,14 @@ const app = express();
 app.use(express.static("public"));
 
 /* ---------- Realtime session ---------- */
-app.get("/session", async (_req, res) => {
+app.get("/session", async (req, res) => {
   try {
+
+    const voiceOption = req.query.voice || alloy;
+    const validVoices = ["alloy", "ash", "ballad", "coral", "echo", "sage", "shimmer", "verse"];
+
+    const voice = validVoices.includes(voiceOption) ? voiceOption : "alloy";
+
     const r = await fetch("https://api.openai.com/v1/realtime/sessions", {
       method: "POST",
       headers: {
@@ -24,7 +30,7 @@ app.get("/session", async (_req, res) => {
       },
       body: JSON.stringify({
         model: "gpt-4o-realtime-preview-2024-12-17",
-        voice: "alloy",
+        voice: voice,
         instructions: "Tüm yanıtlarını Türkçe ver."
       })
     });

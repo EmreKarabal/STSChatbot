@@ -3,11 +3,18 @@ const startBtn  = document.getElementById("startBtn");
 const stopBtn   = document.getElementById("stopBtn");
 const logsEl    = document.getElementById("logs");
 const promptEl  = document.getElementById("promptInput");
+const voiceEl   = document.getElementById('voiceSelect');
 const saveBtn   = document.getElementById("savePromptBtn");
+const micButton = document.getElementById('micButton');
+
 
 /* ---------- State ---------- */
 let pc, dc, localTrack, audioEl;
 let userPrompt = "";
+let userVoice = 'alloy';
+let isMicActive = false;
+let isMicMuted = true;
+let trackEnabled = false;
 
 /* ---------- Helpers ---------- */
 function log(...a){
@@ -19,25 +26,33 @@ function log(...a){
 /* ---------- Prompt Kaydet ---------- */
 saveBtn.addEventListener("click", () => {
   userPrompt = promptEl.value.trim();
+  userVoice = voiceEl.value;
   if (!userPrompt){ alert("Önce prompt girin."); return; }
-  log("💾  Prompt kaydedildi.");
+  log(`💾  Prompt kaydedildi. Seçilen ses: ${userVoice}`);
   if (dc && dc.readyState==="open") sendPromptToSession();
 });
 
 /* ---------- Bağlan ---------- */
 export async function connect(){
   if (!userPrompt){ alert("Önce prompt kaydedin."); return; }
-  startBtn.disabled = true; stopBtn.disabled = false;
+  startBtn.disabled = true; 
+  stopBtn.disabled = false;
 
   /* 1 – Ephemeral key */
-  const { client_secret, id:sessionId } = await (await fetch("/session")).json();
+  const { client_secret, id:sessionId } = await (await fetch("/session?voice=" + encodeURIComponent(userVoice))).json();
   const EPHEMERAL_KEY = client_secret.value;
 
   /* 2 – Peer & Data‑channel */
   pc = new RTCPeerConnection();
   dc = pc.createDataChannel("oai-events");
 
-  dc.onopen = () => sendPromptToSession(true);
+  dc.onopen = () => {
+
+    sendPromptToSession(true);
+    micButton.disabled = false;
+    log("🎤  Mikrofon butonu aktif. Konuşmak için basılı tutun.");
+
+  };
 
   dc.onmessage = async (e) => {
     const evt = JSON.parse(e.data);
@@ -62,7 +77,9 @@ export async function connect(){
   const stream = await navigator.mediaDevices.getUserMedia({
     audio:{noiseSuppression:true,echoCancellation:true,autoGainControl:false}
   });
-  localTrack = stream.getTracks()[0]; pc.addTrack(localTrack);
+  localTrack = stream.getTracks()[0]; 
+  localTrack.enabled = false;
+  pc.addTrack(localTrack);
 
   /* 5 – SDP Offer / Answer */
   const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
@@ -72,7 +89,7 @@ export async function connect(){
       headers:{Authorization:`Bearer ${EPHEMERAL_KEY}`,"Content-Type":"application/sdp"} }
   );
   await pc.setRemoteDescription({type:"answer", sdp: await sdpRes.text()});
-  log("✅  Bağlantı kuruldu — Session:", sessionId);
+  log("✅  Bağlantı kuruldu — Session:", sessionId, `---Ses: ${userVoice}`);
 }
 
 /* ---------- Session.update gönder ---------- */
@@ -126,7 +143,7 @@ function sendPromptToSession(includeVad=false){
     Object.assign(payload.session,{
       turn_detection:{
         type:"server_vad",
-        threshold:0.75,
+        threshold:0.50,
         prefix_padding_ms:300,
         silence_duration_ms:500,
         create_response:true,
@@ -148,15 +165,15 @@ async function handleFunctionCall(call){
     const args = JSON.parse(argsJSON||"{}");
 
     if (name==="get_weather"){
-      const q = new URLSearchParams({city:args.city}).toString();
-      output = await (await fetch(`/tool/weather?${q}`)).json();
+      const query = new URLSearchParams({city:args.city}).toString();
+      output = await (await fetch(`/tool/weather?${query}`)).json();
 
     } else if (name==="get_rate"){
-      const q = new URLSearchParams({
+      const query = new URLSearchParams({
         base:args.base||"USD",
         target:args.target
       }).toString();
-      output = await (await fetch(`/tool/rate?${q}`)).json();
+      output = await (await fetch(`/tool/rate?${query}`)).json();
 
     } else if (name === 'get_metar'){
       const query = new URLSearchParams({ icao: args.icao}).toString();
@@ -197,5 +214,45 @@ export function disconnect(){
   log("⛔ Bağlantı kapatıldı");
 }
 
+
+
+function setupMicrophoneButton(){
+
+  micButton.addEventListener('mousedown', () => {
+
+    if(localTrack) {
+
+      localTrack.enabled = true;
+      micButton.classList.add('active');
+      log("Mikrofon aktif");
+
+    }
+
+
+  });
+
+
+  micButton.addEventListener('mouseup', () => {
+
+    if(localTrack){
+
+      localTrack.enabled = false;
+      micButton.classList.remove('active');
+      log("Mikrofon kapatıldı.");
+
+    }
+
+  });
+
+}
+
+
+
+
+setupMicrophoneButton();
+
+
 startBtn.addEventListener("click", connect);
 stopBtn .addEventListener("click", disconnect);
+
+

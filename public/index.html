@@ -6,19 +6,46 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Türkçe Realtime Sesli Bot</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
 </head>
 
 <body>
   <h1>Türkçe Realtime Sesli Bot</h1>
 
-  <label for="promptInput">Bağlam / Prompt:</label>
-  <textarea id="promptInput" rows="3" placeholder="Örn: Sen X firmasında çalışan bir chatbot'sun."></textarea>
-  <button id="savePromptBtn">Yönergeyi Kaydet</button>
+  <div class="form-group">
+    <label for="promptInput">Prompt: </label>
+    <textarea id="promptInput" rows="3" placeholder="Örn: Sen X firmasında çalışan bir chatbotsun"></textarea>
+  </div>
 
+  <div class="form-group">
+    <label for="voiceSelect">Bot Sesi:</label>
+    <select id="voiceSelect">
+      <option value="alloy">Alloy</option>
+      <option value="ash">Ash</option>
+      <option value="ballad">Ballad</option>
+      <option value="coral">Coral</option>
+      <option value="echo">Echo</option>
+      <option value="sage">Sage</option>
+      <option value="shimmer">Shimmer</option>
+      <option value="verse">Verse</option>
+    </select>
+  </div>
+
+  <button id="savePromptBtn">Yönergeyi ve Sesi Kaydet</button>
   <hr />
 
-  <button id="startBtn">Bağlan + Konuş</button>
-  <button id="stopBtn" disabled>Durdur</button>
+  <div class="controls-container">
+    <button id="startBtn">Bağlan + Konuş</button>
+    <button id="stopBtn" disabled>Durdur</button>
+
+    <div class="mic-container">
+    <button id="micButton" disabled>
+      <i class="fas fa-microphone"></i>
+    </button>
+    <span class="mic-label">Konuşmak için basılı tutun</span>
+    </div>
+  </div>
+
   <div id="logs"></div>
 
   <script type="module" src="script.js"></script>
