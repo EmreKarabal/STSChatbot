@@ -13,10 +13,13 @@ const variableTemplate = document.getElementById('variableTemplate');
 let pc, dc, localTrack, audioEl;
 let userPrompt = "";
 let userVoice = 'alloy';
-let isMicActive = false;
-let isMicMuted = true;
-let trackEnabled = false;
 let variables = [];
+
+
+let audioContext, remoteSource, backgroundSource, mixedDestination, backgroundBuffer, gainNodeRemote, gainNodeBackground;
+
+
+const backgroundAudioPath = './assets/office_ambience.mp3';
 
 
 function log(...a){
@@ -38,9 +41,13 @@ saveBtn.addEventListener("click", () => {
 addVariableButton.addEventListener('click', addVariable);
 
 export async function connect(){
-  if (!userPrompt){ alert("Önce prompt kaydedin."); return; }
+  
+  
+
   startBtn.disabled = true; 
   stopBtn.disabled = false;
+
+  initAudioContext();
 
   /* 1 – Ephemeral key */
   const { client_secret, id:sessionId } = await (await fetch("/session?voice=" + encodeURIComponent(userVoice))).json();
@@ -74,8 +81,47 @@ export async function connect(){
   };
 
   /* 3 – Remote audio */
-  audioEl = new Audio(); audioEl.autoplay = true;
-  pc.ontrack = (e)=>{ audioEl.srcObject=e.streams[0]; };
+  audioEl = new Audio(); 
+  audioEl.autoplay = true;
+  pc.ontrack = (e)=>{ 
+    log("🎵 Track alındı - ses akışı başlıyor");
+    const remoteStream = e.streams[0];
+
+    if (!audioEl) {
+      audioEl = new Audio();
+      audioEl.autoplay = true;
+    }
+
+
+    try {
+
+      audioEl.srcObject = remoteStream;
+
+      log("📢 Audio element'e uzak akış bağlandı");
+
+      if(audioContext && remoteStream) {
+
+        remoteSource = audioContext.createMediaStreamSource(remoteStream);
+        remoteSource.connect(gainNodeRemote);
+        gainNodeRemote.connect(mixedDestination);
+        log('🔊 Uzak ses bağlandı ve karıştırıldı');
+
+        startBackgroundAudio();
+      
+      }
+      else {
+
+        log("⚠️ AudioContext veya remoteStream hazır değil!");
+
+      }
+
+    } catch (error) {
+      log("❌ Ses bağlantı hatası:", error.message);
+      console.error("Ses bağlantı hatası:", error);
+
+    }
+
+  };
 
   /* 4 – Mikrofon */
   const stream = await navigator.mediaDevices.getUserMedia({
@@ -86,7 +132,8 @@ export async function connect(){
   pc.addTrack(localTrack);
 
   /* 5 – SDP Offer / Answer */
-  const offer = await pc.createOffer(); await pc.setLocalDescription(offer);
+  const offer = await pc.createOffer(); 
+  await pc.setLocalDescription(offer);
   const sdpRes = await fetch(
     "https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17",
     { method:"POST", body:offer.sdp,
@@ -215,6 +262,7 @@ async function handleFunctionCall(call){
 
 
 export function disconnect(){
+  stopBackgroundAudio();
   stopBtn.disabled = true; startBtn.disabled = false;
   if (dc) dc.close(); if (pc) pc.close(); if (localTrack) localTrack.stop();
   pc = dc = localTrack = null;
@@ -340,6 +388,103 @@ function processPromptVariables(promptText){
   return processedPrompt;
 
 }
+
+
+async function initAudioContext(){
+
+  try {
+
+    if(!audioContext) {
+
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+       log('✅ AudioContext başlatıldı, durum: ' + audioContext.state);
+      gainNodeRemote = audioContext.createGain();
+      gainNodeBackground = audioContext.createGain();
+
+      gainNodeRemote.gain.value = 1.0;
+      gainNodeBackground.gain.value = 0.5;
+
+      mixedDestination = audioContext.destination;
+
+      await loadBackgroundAudio();
+
+      log('init audio context başlatıldı');
+
+    }
+
+
+  } catch (error) {
+
+    log('❌ AudioContext başlatma hatası: ' + error.message);
+    console.error('AudioContext başlatma hatası:', error);
+
+  }
+  
+
+}
+
+
+async function loadBackgroundAudio() {
+
+  try {
+
+    const response = await fetch(backgroundAudioPath);
+    const arrayBuffer = await response.arrayBuffer();
+    backgroundBuffer = await audioContext.decodeAudioData(arrayBuffer);
+    log('backgroun sesi yüklendi');
+
+
+  } catch (error) {
+
+    console.error('arka plan sesi yüklenirken hata: ', error);
+
+  }
+
+}
+
+function startBackgroundAudio(){
+
+  if(!backgroundBuffer || !audioContext) {
+
+    console.error('arka plan sesi yüklenmedi veya audio context başlatılmadı');
+    return;
+  }
+
+  if(audioContext.state === 'suspended') {
+
+    audioContext.resume();
+
+  }
+
+  backgroundSource = audioContext.createBufferSource();
+  backgroundSource.buffer = backgroundBuffer;
+  backgroundSource.loop = true;
+
+  backgroundSource.connect(gainNodeBackground);
+  gainNodeBackground.connect(mixedDestination);
+
+  backgroundSource.start(0);
+  log('arka plan sesi başlatıldı');
+
+}
+
+
+function stopBackgroundAudio(){
+
+  if(backgroundSource) {
+
+    backgroundSource.stop();
+    backgroundSource = null;
+    log('arka plan sesi durduruldu');
+
+  }
+
+}
+
+
+
+
+
 
 
 setupMicrophoneButton();
